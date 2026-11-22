@@ -38,6 +38,12 @@
                 @auth
                     {{-- Profil Pengguna Masuk --}}
                     <div class="flex items-center gap-3 pl-2 border-l border-slate-200">
+                        {{-- Tombol Dashboard --}}
+                        <a href="{{ route('dashboard') }}" class="px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors flex items-center gap-1.5">
+                            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                            Dashboard
+                        </a>
+
                         <div class="flex items-center gap-2">
                             <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
                                 {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
@@ -98,24 +104,30 @@
             <a href="{{ route('homepage') }}#kontak" class="block font-medium text-slate-600 hover:text-blue-600 py-2" onclick="closeMobileMenu()">Kontak</a>
 
             @auth
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                <div class="pt-3 border-t border-slate-100 space-y-3">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-semibold text-blue-600 py-2">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        Dashboard
+                    </a>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-slate-800">{{ Auth::user()->name }}</span>
+                                <span class="inline-block text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded {{ Auth::user()->isAdmin() ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">
+                                    {{ Auth::user()->role }}
+                                </span>
+                            </div>
                         </div>
-                        <div>
-                            <span class="block text-sm font-bold text-slate-800">{{ Auth::user()->name }}</span>
-                            <span class="inline-block text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded {{ Auth::user()->isAdmin() ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">
-                                {{ Auth::user()->role }}
-                            </span>
-                        </div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors">
+                                Keluar
+                            </button>
+                        </form>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors">
-                            Keluar
-                        </button>
-                    </form>
                 </div>
             @else
                 <div class="pt-3 flex gap-3 border-t border-slate-100">

@@ -43,10 +43,10 @@ class AuthController extends Controller
             $user = Auth::user();
 
             if ($user->isAdmin()) {
-                return redirect()->intended('/')->with('success', 'Selamat datang kembali, Administrator ' . $user->name . '!');
+                return redirect()->intended(route('admin.dashboard'))->with('success', 'Selamat datang kembali, Administrator ' . $user->name . '!');
             }
 
-            return redirect()->intended('/')->with('success', 'Halo ' . $user->name . ', Anda berhasil masuk!');
+            return redirect()->intended(route('customer.dashboard'))->with('success', 'Halo ' . $user->name . ', Anda berhasil masuk!');
         }
 
         return back()->withErrors([
@@ -95,7 +95,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('homepage')->with('success', 'Pendaftaran akun berhasil! Selamat datang di RentCar, ' . $user->name . '.');
+        return redirect()->route('customer.dashboard')->with('success', 'Pendaftaran akun berhasil! Selamat datang di RentCar, ' . $user->name . '.');
     }
 
     /**

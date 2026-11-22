@@ -30,7 +30,7 @@ class AuthTest extends TestCase
         $response->assertSee('No. Telepon / WhatsApp');
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_admin_can_authenticate_and_redirect_to_admin_dashboard(): void
     {
         $user = User::factory()->create([
             'email' => 'admin@rentcar.com',
@@ -44,7 +44,24 @@ class AuthTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_customer_can_authenticate_and_redirect_to_customer_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'customer@test.com',
+            'password' => Hash::make('password123'),
+            'role' => 'customer',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => 'customer@test.com',
+            'password' => 'password123',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('customer.dashboard'));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -63,7 +80,7 @@ class AuthTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
-    public function test_new_users_can_register(): void
+    public function test_new_users_can_register_as_customer(): void
     {
         $response = $this->post('/register', [
             'name' => 'Budi Baru',
@@ -75,7 +92,7 @@ class AuthTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('homepage'));
+        $response->assertRedirect(route('customer.dashboard'));
 
         $this->assertDatabaseHas('users', [
             'email' => 'budi.baru@example.com',
@@ -91,5 +108,42 @@ class AuthTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect(route('homepage'));
+    }
+
+    public function test_admin_dashboard_requires_admin_role(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+
+        $this->actingAs($customer)->get('/admin/dashboard')->assertStatus(403);
+    }
+
+    public function test_customer_dashboard_requires_customer_role(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/customer/dashboard')->assertStatus(403);
+    }
+
+    public function test_admin_can_access_admin_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/admin/dashboard')->assertStatus(200);
+    }
+
+    public function test_customer_can_access_customer_dashboard(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+
+        $this->actingAs($customer)->get('/customer/dashboard')->assertStatus(200);
+    }
+
+    public function test_dashboard_redirects_based_on_role(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->create(['role' => 'customer']);
+
+        $this->actingAs($admin)->get('/dashboard')->assertRedirect(route('admin.dashboard'));
+        $this->actingAs($customer)->get('/dashboard')->assertRedirect(route('customer.dashboard'));
     }
 }
