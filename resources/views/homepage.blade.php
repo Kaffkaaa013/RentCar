@@ -426,8 +426,8 @@
                 Tutup
             </button>
             @auth
-                @if (auth()->user()->role === 'customer')
-                    <a id="modalRentalButton" data-rental-url="{{ route('customer.rentals.create', ['car_id' => '__CAR_ID__']) }}" href="#" class="hidden px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors items-center justify-center gap-2">
+                @if (in_array(auth()->user()->role, ['customer', 'admin'], true))
+                    <a id="modalRentalButton" data-rental-url="{{ route(auth()->user()->isAdmin() ? 'admin.rentals.create' : 'customer.rentals.create', ['car_id' => '__CAR_ID__']) }}" href="#" class="hidden px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors items-center justify-center gap-2">
                         <i data-lucide="car-front" class="w-4 h-4"></i>
                         Rental Mobil Ini
                     </a>

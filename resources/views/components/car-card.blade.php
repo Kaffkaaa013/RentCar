@@ -76,8 +76,8 @@
             </button>
 
             @auth
-                @if (auth()->user()->role === 'customer' && $car->status === 'available')
-                    <a href="{{ route('customer.rentals.create', ['car_id' => $car->id]) }}"
+                @if (in_array(auth()->user()->role, ['customer', 'admin'], true) && $car->status === 'available')
+                    <a href="{{ route(auth()->user()->isAdmin() ? 'admin.rentals.create' : 'customer.rentals.create', ['car_id' => $car->id]) }}"
                        class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2">
                         <i data-lucide="car-front" class="w-4 h-4"></i>
                         <span>Rental</span>
