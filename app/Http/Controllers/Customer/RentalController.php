@@ -13,11 +13,17 @@ use Illuminate\View\View;
 
 class RentalController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
         $cars = Car::with('category')->where('status', 'available')->orderBy('name')->get();
+        $selectedCarId = $request->query('car_id');
 
-        return view('customer.rentals.create', compact('cars'));
+        // Abaikan pilihan jika mobil tidak tersedia atau tidak ditemukan.
+        if ($selectedCarId && !$cars->contains('id', (int) $selectedCarId)) {
+            $selectedCarId = null;
+        }
+
+        return view('customer.rentals.create', compact('cars', 'selectedCarId'));
     }
 
     public function store(Request $request): RedirectResponse

@@ -30,7 +30,7 @@
             <select id="car_id" name="car_id" required class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="">-- Pilih mobil --</option>
                 @foreach ($cars as $car)
-                    <option value="{{ $car->id }}" data-price="{{ $car->price_per_day }}" @selected(old('car_id') == $car->id)>
+                    <option value="{{ $car->id }}" data-price="{{ $car->price_per_day }}" @selected(old('car_id', $selectedCarId) == $car->id)>
                         {{ $car->name }} - {{ $car->plate_number }} (Rp {{ number_format($car->price_per_day, 0, ',', '.') }}/hari)
                     </option>
                 @endforeach

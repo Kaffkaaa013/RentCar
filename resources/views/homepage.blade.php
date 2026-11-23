@@ -361,7 +361,7 @@
 </section>
 
 {{-- =========================================================================
-     MODAL POPUP DETAIL MOBIL (Hanya Tampilan Detail Saja, Non-Booking)
+     MODAL POPUP DETAIL MOBIL
      ========================================================================= --}}
 <div id="carDetailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all">
@@ -411,16 +411,13 @@
                     <span class="text-xs text-slate-500">Tarif Sewa Harian</span>
                     <div id="modalPrice" class="text-xl font-black text-[#0f2557]"></div>
                 </div>
-                <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">Unit Tersedia</span>
+                <span id="modalCarStatus" class="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">Unit Tersedia</span>
             </div>
 
-            <p class="text-xs text-slate-400 italic">
-                *Catatan: Modul booking dan pembayaran dikerjakan oleh anggota kelompok lain.
-            </p>
         </div>
 
         {{-- Footer Modal --}}
-        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-between gap-2">
             <button
                 type="button"
                 onclick="closeCarDetailModal()"
@@ -428,6 +425,19 @@
             >
                 Tutup
             </button>
+            @auth
+                @if (auth()->user()->role === 'customer')
+                    <a id="modalRentalButton" data-rental-url="{{ route('customer.rentals.create', ['car_id' => '__CAR_ID__']) }}" href="#" class="hidden px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors items-center justify-center gap-2">
+                        <i data-lucide="car-front" class="w-4 h-4"></i>
+                        Rental Mobil Ini
+                    </a>
+                @endif
+            @else
+                <a id="modalRentalButton" href="{{ route('login') }}" class="hidden px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors items-center justify-center gap-2">
+                    <i data-lucide="car-front" class="w-4 h-4"></i>
+                    Login untuk Rental
+                </a>
+            @endauth
         </div>
     </div>
 </div>
@@ -520,7 +530,7 @@
     }
 
     // Modal Detail Mobil (Tampilan Saja)
-    function showCarDetailModal(name, brand, price, seats, transmission, category, image, year, plate) {
+    function showCarDetailModal(name, brand, price, seats, transmission, category, image, year, plate, carId, carStatus) {
         document.getElementById('modalTitle').textContent = name;
         document.getElementById('modalCategory').textContent = category;
         document.getElementById('modalPrice').textContent = price;
@@ -529,6 +539,22 @@
         document.getElementById('modalImage').src = image;
         document.getElementById('modalYear').textContent = year || '-';
         document.getElementById('modalPlate').textContent = plate || '-';
+
+        const statusBadge = document.getElementById('modalCarStatus');
+        const rentalButton = document.getElementById('modalRentalButton');
+        const isAvailable = carStatus === 'available';
+        statusBadge.textContent = isAvailable ? 'Unit Tersedia' : (carStatus === 'maintenance' ? 'Dalam Perawatan' : 'Tidak Tersedia');
+        statusBadge.className = isAvailable
+            ? 'text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full'
+            : 'text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full';
+
+        if (rentalButton) {
+            rentalButton.classList.toggle('hidden', !isAvailable);
+            rentalButton.style.display = isAvailable ? 'inline-flex' : 'none';
+            if (isAvailable && rentalButton.dataset.rentalUrl) {
+                rentalButton.href = rentalButton.dataset.rentalUrl.replace('__CAR_ID__', carId);
+            }
+        }
 
         document.getElementById('carDetailModal').classList.remove('hidden');
         if (typeof lucide !== 'undefined') {
