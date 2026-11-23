@@ -10,10 +10,14 @@
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Halo, {{ $user->name }}!</h1>
             <p class="mt-1 text-sm text-slate-500">Kelola dan pantau status rental mobil Anda dari sini.</p>
         </div>
-        <div>
-            <a href="{{ route('homepage') }}#katalog" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('customer.rentals.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                 <span>Sewa Mobil Baru</span>
+            </a>
+            <a href="{{ route('customer.returns.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
+                <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
+                <span>Pengembalian Mobil</span>
             </a>
         </div>
     </div>
