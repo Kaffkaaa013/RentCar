@@ -6,7 +6,7 @@
 @section('content')
 <div class="max-w-4xl mx-auto">
     <div class="mb-6">
-        <a href="{{ route('customer.dashboard') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-800">← Kembali ke Dashboard</a>
+        <a href="{{ route(auth()->user()->isAdmin() ? 'admin.dashboard' : 'customer.dashboard') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-800">← Kembali ke Dashboard</a>
         <h1 class="mt-3 text-2xl font-black text-slate-900">Ajukan Rental Mobil</h1>
         <p class="mt-1 text-sm text-slate-500">Pilih mobil dan tentukan tanggal penggunaan. Pengajuan akan menunggu konfirmasi admin.</p>
     </div>
@@ -17,7 +17,7 @@
             <p class="mt-1 text-sm text-slate-500">Silakan coba lagi nanti.</p>
         </div>
     @else
-    <form method="POST" action="{{ route('customer.rentals.store') }}" class="space-y-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+    <form method="POST" action="{{ route(auth()->user()->isAdmin() ? 'admin.rentals.store' : 'customer.rentals.store') }}" class="space-y-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         @csrf
         @if ($errors->any())
             <div class="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">

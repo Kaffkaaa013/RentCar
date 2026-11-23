@@ -71,7 +71,9 @@ class RentalController extends Controller
             ]);
         });
 
-        return redirect()->route('customer.dashboard')
+        $dashboardRoute = $request->user()->isAdmin() ? 'admin.dashboard' : 'customer.dashboard';
+
+        return redirect()->route($dashboardRoute)
             ->with('success', 'Pengajuan rental berhasil dibuat. Silakan tunggu konfirmasi admin.');
     }
 }
