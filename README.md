@@ -56,3 +56,20 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+## Fitur Rental dan Pengembalian Mobil
+
+### Alur customer
+1. Login sebagai customer, lalu buka Dashboard Customer.
+2. Klik **Sewa Mobil Baru**, pilih mobil, tanggal mulai, tanggal selesai, dan isi catatan jika diperlukan.
+3. Sistem menghitung total hari dan biaya rental, lalu menyimpan pengajuan dengan status `pending`.
+4. Buka menu **Pengembalian Mobil** untuk melihat rental yang sudah berstatus `ongoing`.
+5. Isi kondisi mobil dan konfirmasi pengembalian. Sistem menyimpan tanggal pengembalian, menghitung keterlambatan, dan mengubah status booking menjadi `completed`.
+
+### Alur admin
+1. Login sebagai admin dan buka Dashboard Admin.
+2. Pada daftar **Booking Terbaru**, klik **Konfirmasi** untuk mengubah status `pending` menjadi `confirmed`.
+3. Klik **Mulai Rental** untuk mengubah status `confirmed` menjadi `ongoing`. Setelah itu customer dapat memproses pengembalian.
+
+Denda keterlambatan saat ini ditetapkan Rp100.000 per hari. Sistem menolak pengajuan jika mobil sudah memiliki booking aktif pada rentang tanggal yang bertabrakan. Fitur menggunakan tabel `bookings` dan `returns` yang sudah tersedia pada migration project.
