@@ -65,15 +65,31 @@
             </div>
         </div>
 
-        {{-- Tombol Lihat Detail (Tampilan saja, tidak menjalankan proses rental/booking) --}}
-        <div class="mt-5 pt-1">
+        {{-- Tombol Detail dan Rental --}}
+        <div class="mt-5 pt-1 grid grid-cols-2 gap-2">
             <button
                 type="button"
-                onclick="showCarDetailModal('{{ addslashes($carName) }}', '{{ addslashes($car->brand) }}', 'Rp {{ number_format($carPrice, 0, ',', '.') }} / hari', '{{ $carSeats }} Kursi', '{{ $carTrans }}', '{{ addslashes($carCategory) }}', '{{ $carImgSrc }}', '{{ $car->year }}', '{{ $car->plate_number }}')"
-                class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
+                onclick="showCarDetailModal('{{ addslashes($carName) }}', '{{ addslashes($car->brand) }}', 'Rp {{ number_format($carPrice, 0, ',', '.') }} / hari', '{{ $carSeats }} Kursi', '{{ $carTrans }}', '{{ addslashes($carCategory) }}', '{{ $carImgSrc }}', '{{ $car->year }}', '{{ $car->plate_number }}', '{{ $car->id }}', '{{ $car->status }}')"
+                class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
             >
                 <span>Lihat Detail</span>
             </button>
+
+            @auth
+                @if (auth()->user()->role === 'customer' && $car->status === 'available')
+                    <a href="{{ route('customer.rentals.create', ['car_id' => $car->id]) }}"
+                       class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2">
+                        <i data-lucide="car-front" class="w-4 h-4"></i>
+                        <span>Rental</span>
+                    </a>
+                @endif
+            @else
+                <a href="{{ route('login') }}"
+                   class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-sm transition-all duration-150 flex items-center justify-center gap-2">
+                    <i data-lucide="car-front" class="w-4 h-4"></i>
+                    <span>Rental</span>
+                </a>
+            @endauth
         </div>
     </div>
 </div>
