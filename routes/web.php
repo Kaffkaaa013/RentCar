@@ -8,6 +8,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\HomepageController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
 
 // Halaman Utama Customer
 Route::get('/', [HomepageController::class, 'index'])->name('homepage');
@@ -44,6 +46,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/bookings/{booking}/status', [BookingStatusController::class, 'update'])->name('bookings.status');
     Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
     Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
+    Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+    Route::patch('/payments/{payment}', [AdminPaymentController::class, 'update'])->name('payments.update');
 });
 
 // Dashboard Khusus Customer
@@ -51,6 +55,10 @@ Route::middleware(['auth', 'customer'])->prefix('customer')->name('customer.')->
     Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
     Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
+    Route::patch('/bookings/{booking}/cancel', [RentalController::class, 'cancel'])->name('bookings.cancel');
     Route::get('/returns', [ReturnController::class, 'index'])->name('returns.index');
     Route::post('/returns/{booking}', [ReturnController::class, 'store'])->name('returns.store');
+    Route::get('/payments', [CustomerPaymentController::class, 'index'])->name('payments.index');
+    Route::get('/bookings/{booking}/payment', [CustomerPaymentController::class, 'create'])->name('payments.create');
+    Route::post('/bookings/{booking}/payment', [CustomerPaymentController::class, 'store'])->name('payments.store');
 });

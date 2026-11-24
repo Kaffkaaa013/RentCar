@@ -51,25 +51,49 @@
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                {{-- Logo --}}
-                <a href="{{ route('homepage') }}" class="flex items-center gap-2 group">
-                    <div class="w-9 h-9 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                        <i data-lucide="car" class="w-5 h-5"></i>
-                    </div>
-                    <span class="text-xl font-extrabold text-[#0f2557] tracking-tight">Rent<span class="text-blue-600">Car</span></span>
-                </a>
-
-                {{-- Breadcrumbs / Section Title --}}
-                <div class="hidden sm:flex items-center gap-2 text-sm">
-                    <a href="{{ route('homepage') }}" class="text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1">
-                        <i data-lucide="home" class="w-3.5 h-3.5"></i>
-                        Beranda
+                {{-- Sisi Kiri: Logo + Navigasi Breadcrumb di Sebelah RentCar --}}
+                <div class="flex items-center gap-6">
+                    {{-- Logo --}}
+                    <a href="{{ route('homepage') }}" class="flex items-center gap-2 group">
+                        <div class="w-9 h-9 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            <i data-lucide="car" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xl font-extrabold text-[#0f2557] tracking-tight">Rent<span class="text-blue-600">Car</span></span>
                     </a>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
-                    <span class="text-slate-700 font-semibold">@yield('page-title', 'Dashboard')</span>
+
+                    {{-- Navigasi Tepat di Sebelah Tulisan RentCar --}}
+                    <div class="hidden sm:flex items-center gap-2 text-sm pl-6 border-l border-slate-200">
+                        <a href="{{ route('homepage') }}" class="text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1">
+                            <i data-lucide="home" class="w-3.5 h-3.5"></i>
+                            Beranda
+                        </a>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
+
+                        @if (Auth::user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}"
+                               class="{{ request()->routeIs('admin.dashboard') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
+                                Dashboard Admin
+                            </a>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
+                            <a href="{{ route('admin.payments.index') }}"
+                               class="{{ request()->routeIs('admin.payments.*') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
+                                Verifikasi Pembayaran
+                            </a>
+                        @else
+                            <a href="{{ route('customer.dashboard') }}"
+                               class="{{ request()->routeIs('customer.dashboard') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
+                                Dashboard Customer
+                            </a>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
+                            <a href="{{ route('customer.payments.index') }}"
+                               class="{{ request()->routeIs('customer.payments.*') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
+                                Pembayaran
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
-                {{-- User Info & Actions --}}
+                {{-- Sisi Kanan: User Info & Actions --}}
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2.5 text-right">
                         <div>

@@ -71,9 +71,30 @@ class RentalController extends Controller
             ]);
         });
 
-        $dashboardRoute = $request->user()->isAdmin() ? 'admin.dashboard' : 'customer.dashboard';
+        if ($request->user()->isAdmin()) {
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'Pengajuan rental berhasil dibuat.');
+        }
 
-        return redirect()->route($dashboardRoute)
-            ->with('success', 'Pengajuan rental berhasil dibuat. Silakan tunggu konfirmasi admin.');
+        return redirect()
+            ->route('customer.payments.create', $booking->id)
+            ->with('success', 'Pesanan berhasil dibuat. Silakan unggah bukti pembayaran.');
+    }
+
+    public function cancel(Request $request, Booking $booking): RedirectResponse
+    {
+        if ($booking->user_id !== $request->user()->id) {
+            abort(403, 'Anda tidak memiliki akses ke transaksi ini.');
+        }
+
+        if ($booking->booking_status !== 'pending') {
+            return back()->with('error', 'Pesanan yang sudah diproses tidak dapat dibatalkan.');
+        }
+
+        $booking->update([
+            'booking_status' => 'cancelled',
+        ]);
+
+        return back()->with('success', 'Pesanan rental berhasil dibatalkan.');
     }
 }

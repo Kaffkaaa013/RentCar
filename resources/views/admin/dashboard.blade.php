@@ -134,11 +134,17 @@
                                 'completed' => 'bg-emerald-100 text-emerald-800',
                                 'cancelled' => 'bg-rose-100 text-rose-800',
                             ];
+
+                            $isUnpaid = $booking->booking_status === 'pending' && !$booking->payment;
+                            $badgeColor = $isUnpaid
+                                ? 'bg-slate-100 text-slate-600'
+                                : ($statusColors[$booking->booking_status] ?? 'bg-slate-100 text-slate-600');
+                            $badgeLabel = $isUnpaid ? 'Belum Bayar' : $booking->booking_status;
                         @endphp
-                        <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full {{ $statusColors[$booking->booking_status] ?? 'bg-slate-100 text-slate-600' }}">
-                            {{ $booking->booking_status }}
+                        <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full {{ $badgeColor }}">
+                            {{ $badgeLabel }}
                         </span>
-                        @if ($booking->booking_status === 'pending' || $booking->booking_status === 'confirmed')
+                        @if (($booking->booking_status === 'pending' && $booking->payment) || $booking->booking_status === 'confirmed')
                             <form method="POST" action="{{ route('admin.bookings.status', $booking) }}" class="shrink-0">
                                 @csrf
                                 @method('PATCH')
