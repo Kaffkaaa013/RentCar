@@ -4,116 +4,86 @@
 @section('page-title', 'Verifikasi Pembayaran')
 
 @section('content')
-<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-5 border-b border-slate-200">
-        <h2 class="text-lg font-bold text-[#0f2557]">Verifikasi Pembayaran Masuk</h2>
-        <p class="text-xs text-slate-500 mt-0.5">Periksa bukti transfer dari penyewa sebelum menyetujui transaksi.</p>
+    <div class="mb-6">
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Verifikasi Pembayaran Customer</h1>
+        <p class="mt-1 text-sm text-slate-500">Periksa bukti transfer dan konfirmasi pembayaran agar booking siap diserahkan.</p>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-                    <th class="px-6 py-3.5">ID Booking</th>
-                    <th class="px-6 py-3.5">Nama Mobil</th>
-                    <th class="px-6 py-3.5">Penyewa</th>
-                    <th class="px-6 py-3.5">Metode</th>
-                    <th class="px-6 py-3.5">Nominal</th>
-                    <th class="px-6 py-3.5">Tanggal Bayar</th>
-                    <th class="px-6 py-3.5">Bukti Transfer</th>
-                    <th class="px-6 py-3.5">Status</th>
-                    <th class="px-6 py-3.5">Verifikasi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200">
-                @forelse ($payments as $payment)
-                    <tr class="hover:bg-slate-50/80">
-                        <td class="px-6 py-4 font-bold text-slate-800">#{{ $payment->booking_id }}</td>
-                        <td class="px-6 py-4 font-semibold text-slate-700">{{ $payment->booking->car->name ?? '-' }}</td>
-                        <td class="px-6 py-4 font-medium text-slate-700">{{ $payment->booking->user->name ?? '-' }}</td>
-                        <td class="px-6 py-4 text-slate-600">{{ $payment->payment_method }}</td>
-                        <td class="px-6 py-4 font-semibold text-slate-800">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
-                        <td class="px-6 py-4 text-slate-500">{{ $payment->paid_at ? $payment->paid_at->format('d M Y H:i') : '-' }}</td>
-                        <td class="px-6 py-4">
-                            @if ($payment->proof_image)
-                                <a href="{{ asset('storage/' . $payment->proof_image) }}" target="_blank"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold">
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                    Buka Bukti
+    <div class="flex flex-wrap gap-2 mb-5">
+        <a href="{{ route('admin.payments.index') }}" class="px-3.5 py-1.5 rounded-full text-xs font-bold {{ !$status ? 'bg-[#0f2557] text-white' : 'bg-white border border-slate-200 text-slate-600' }}">Semua</a>
+        @foreach (['pending', 'verified', 'rejected'] as $st)
+            <a href="{{ route('admin.payments.index', ['status' => $st]) }}"
+               class="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase {{ $status === $st ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600' }}">
+                {{ $st }}
+            </a>
+        @endforeach
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                        <th class="px-6 py-3.5">Booking & Customer</th>
+                        <th class="px-6 py-3.5">Metode & Jumlah</th>
+                        <th class="px-6 py-3.5">Bukti Bayar</th>
+                        <th class="px-6 py-3.5">Status</th>
+                        <th class="px-6 py-3.5 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    @forelse ($payments as $payment)
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-6 py-4">
+                                <a href="{{ route('admin.rentals.show', $payment->booking) }}" class="font-bold text-blue-600 hover:underline">
+                                    #{{ $payment->booking_id }} &middot; {{ $payment->booking->user->name ?? '-' }}
                                 </a>
-                            @else
-                                <span class="text-slate-400 text-xs">Tidak ada</span>
-                            @endif
-                        </td>
-
-                        {{-- Kolom STATUS --}}
-                        <td class="px-6 py-4">
-                            @if (in_array($payment->payment_status, ['verified', 'paid']))
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-700">
-                                    Confirmed
-                                </span>
-                            @elseif ($payment->payment_status === 'rejected')
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-rose-100 text-rose-700">
-                                    Ditolak
-                                </span>
-                            @else
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800">
-                                    Pending
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- Kolom VERIFIKASI --}}
-                        <td class="px-6 py-4">
-                            @if ($payment->payment_status === 'pending')
-                                <div class="flex items-center gap-2">
-                                    <form action="{{ route('admin.payments.update', $payment->id) }}" method="POST">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="payment_status" value="verified">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer">
-                                            Terima
-                                        </button>
-                                    </form>
-                                    <form action="{{ route('admin.payments.update', $payment->id) }}" method="POST">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="payment_status" value="rejected">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold cursor-pointer">
-                                            Tolak
-                                        </button>
-                                    </form>
-                                </div>
-                            @elseif (in_array($payment->payment_status, ['verified', 'paid']))
-                                @if ($payment->booking && $payment->booking->booking_status === 'confirmed')
-                                    <form action="{{ route('admin.bookings.status', $payment->booking_id) }}" method="POST">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="booking_status" value="ongoing">
-                                        <input type="hidden" name="status" value="ongoing">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 text-xs font-semibold transition-colors cursor-pointer">
-                                            Mulai Rental
-                                        </button>
-                                    </form>
-                                @elseif ($payment->booking && $payment->booking->booking_status === 'ongoing')
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                                        Sedang Disewa
-                                    </span>
+                                <p class="text-xs text-slate-400">{{ $payment->booking->car->brand ?? '' }} {{ $payment->booking->car->name ?? '' }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-xs">
+                                <p class="font-bold text-slate-800">Rp {{ number_format($payment->amount, 0, ',', '.') }}</p>
+                                <p class="text-slate-400">{{ $payment->payment_method }}</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if ($payment->proof_image)
+                                    <a href="{{ asset('storage/' . $payment->proof_image) }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline">
+                                        <i data-lucide="image" class="w-4 h-4"></i> Lihat Bukti
+                                    </a>
                                 @else
-                                    <span class="text-slate-400 text-xs">Selesai</span>
+                                    <span class="text-xs text-slate-400">Belum diunggah</span>
                                 @endif
-                            @else
-                                <span class="text-rose-500 text-xs font-medium">Dibatalkan</span>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="px-6 py-10 text-center text-slate-400">Belum ada data pembayaran masuk.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full
+                                    {{ $payment->payment_status === 'verified' ? 'bg-emerald-100 text-emerald-800' : ($payment->payment_status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
+                                    {{ $payment->payment_status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                                @if ($payment->payment_status === 'pending')
+                                    <form action="{{ route('admin.payments.verify', $payment) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg cursor-pointer">Verify</button>
+                                    </form>
+                                    <form action="{{ route('admin.payments.reject', $payment) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg cursor-pointer">Reject</button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('admin.rentals.show', $payment->booking) }}" class="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg">Detail</a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-sm text-slate-400">Belum ada data pembayaran.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-100">
+            {{ $payments->withQueryString()->links() }}
+        </div>
     </div>
-</div>
 @endsection

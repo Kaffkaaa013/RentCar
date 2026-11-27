@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -97,5 +98,31 @@ class Booking extends Model
     public function review(): HasOne
     {
         return $this->hasOne(Review::class);
+    }
+
+    /**
+     * Hitung jumlah hari sewa (minimal 1 hari).
+     */
+    public static function calculateDays(string $startDate, string $endDate): int
+    {
+        $days = (int) Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate));
+
+        return max(1, $days);
+    }
+
+    /**
+     * Periksa apakah mobil sudah dipesan pada rentang tanggal yang bertabrakan.
+     */
+    public static function hasDateConflict(int $carId, string $startDate, string $endDate, ?int $ignoreBookingId = null): bool
+    {
+        return static::query()
+            ->where('car_id', $carId)
+            ->whereIn('booking_status', ['pending', 'confirmed', 'ongoing'])
+            ->when($ignoreBookingId, fn ($q) => $q->where('id', '!=', $ignoreBookingId))
+            ->where(function ($query) use ($startDate, $endDate): void {
+                $query->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate);
+            })
+            ->exists();
     }
 }

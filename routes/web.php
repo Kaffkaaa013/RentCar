@@ -1,15 +1,17 @@
 <?php
 
+use App\Http\Controllers\Admin\CarController as AdminCarController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\BookingStatusController;
-use App\Http\Controllers\Customer\RentalController;
-use App\Http\Controllers\Customer\ReturnController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\RentalController as AdminRentalController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
-use App\Http\Controllers\HomepageController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
+use App\Http\Controllers\Customer\RentalController as CustomerRentalController;
+use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 
 // Halaman Utama Customer
 Route::get('/', [HomepageController::class, 'index'])->name('homepage');
@@ -27,6 +29,11 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Edit Profil & Ganti Password (Admin & Customer)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
     // Dashboard redirect otomatis berdasarkan role
     Route::get('/dashboard', function () {
         /** @var \App\Models\User $user */
@@ -40,25 +47,47 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 });
 
-// Dashboard Khusus Admin
+// Area Khusus Admin
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::patch('/bookings/{booking}/status', [BookingStatusController::class, 'update'])->name('bookings.status');
-    Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
-    Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
+
+    // CRUD Mobil & Kategori
+    Route::resource('cars', AdminCarController::class)->except(['show']);
+    Route::resource('categories', AdminCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    // Kelola Booking, Serah Terima, dan Pengembalian
+    Route::get('/rentals', [AdminRentalController::class, 'index'])->name('rentals.index');
+    Route::get('/rentals/create', [AdminRentalController::class, 'create'])->name('rentals.create');
+    Route::post('/rentals', [AdminRentalController::class, 'store'])->name('rentals.store');
+    Route::get('/rentals/{booking}', [AdminRentalController::class, 'show'])->name('rentals.show');
+    Route::post('/rentals/{booking}/handover', [AdminRentalController::class, 'handover'])->name('rentals.handover');
+    Route::post('/rentals/{booking}/return', [AdminRentalController::class, 'returnCar'])->name('rentals.return');
+    Route::post('/rentals/{booking}/cancel', [AdminRentalController::class, 'cancel'])->name('rentals.cancel');
+    Route::patch('/bookings/{booking}/status', [AdminRentalController::class, 'updateStatus'])->name('bookings.status');
+
+    // Verifikasi Pembayaran
     Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
-    Route::patch('/payments/{payment}', [AdminPaymentController::class, 'update'])->name('payments.update');
+    Route::post('/payments/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('payments.verify');
+    Route::post('/payments/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('payments.reject');
 });
 
-// Dashboard Khusus Customer
+// Area Khusus Customer
 Route::middleware(['auth', 'customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
-    Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
-    Route::patch('/bookings/{booking}/cancel', [RentalController::class, 'cancel'])->name('bookings.cancel');
-    Route::get('/returns', [ReturnController::class, 'index'])->name('returns.index');
-    Route::post('/returns/{booking}', [ReturnController::class, 'store'])->name('returns.store');
+
+    // Booking / Rental Customer
+    Route::get('/rentals', [CustomerRentalController::class, 'index'])->name('rentals.index');
+    Route::get('/rentals/create', [CustomerRentalController::class, 'create'])->name('rentals.create');
+    Route::post('/rentals', [CustomerRentalController::class, 'store'])->name('rentals.store');
+    Route::get('/rentals/{booking}', [CustomerRentalController::class, 'show'])->name('rentals.show');
+    Route::post('/rentals/{booking}/cancel', [CustomerRentalController::class, 'cancel'])->name('rentals.cancel');
+    Route::post('/bookings/{booking}/cancel', [CustomerRentalController::class, 'cancel'])->name('bookings.cancel');
+
+    // Pembayaran Customer
     Route::get('/payments', [CustomerPaymentController::class, 'index'])->name('payments.index');
-    Route::get('/bookings/{booking}/payment', [CustomerPaymentController::class, 'create'])->name('payments.create');
-    Route::post('/bookings/{booking}/payment', [CustomerPaymentController::class, 'store'])->name('payments.store');
+    Route::get('/payments/{booking}/create', [CustomerRentalController::class, 'show'])->name('payments.create');
+    Route::post('/payments/{booking}', [CustomerPaymentController::class, 'store'])->name('payments.store');
+
+    // Pengembalian Mobil Customer
+    Route::get('/returns', [CustomerRentalController::class, 'returns'])->name('returns.index');
 });

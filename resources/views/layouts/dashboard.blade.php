@@ -62,31 +62,48 @@
                     </a>
 
                     {{-- Navigasi Tepat di Sebelah Tulisan RentCar --}}
-                    <div class="hidden sm:flex items-center gap-2 text-sm pl-6 border-l border-slate-200">
-                        <a href="{{ route('homepage') }}" class="text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1">
+                    <div class="hidden lg:flex items-center gap-1.5 text-xs pl-6 border-l border-slate-200">
+                        <a href="{{ route('homepage') }}" class="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-1 font-medium">
                             <i data-lucide="home" class="w-3.5 h-3.5"></i>
                             Beranda
                         </a>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
 
                         @if (Auth::user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}"
-                               class="{{ request()->routeIs('admin.dashboard') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
-                                Dashboard Admin
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Dashboard
                             </a>
-                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
+                            <a href="{{ route('admin.cars.index') }}"
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('admin.cars.*') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Mobil
+                            </a>
+                            <a href="{{ route('admin.categories.index') }}"
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('admin.categories.*') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Kategori
+                            </a>
+                            <a href="{{ route('admin.rentals.index') }}"
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('admin.rentals.*') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Booking & Pengembalian
+                            </a>
                             <a href="{{ route('admin.payments.index') }}"
-                               class="{{ request()->routeIs('admin.payments.*') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
-                                Verifikasi Pembayaran
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('admin.payments.*') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Pembayaran
                             </a>
                         @else
                             <a href="{{ route('customer.dashboard') }}"
-                               class="{{ request()->routeIs('customer.dashboard') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
-                                Dashboard Customer
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('customer.dashboard') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Dashboard
                             </a>
-                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-300"></i>
+                            <a href="{{ route('customer.rentals.create') }}"
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('customer.rentals.create') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Sewa Mobil
+                            </a>
+                            <a href="{{ route('customer.rentals.index') }}"
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('customer.rentals.index', 'customer.rentals.show') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
+                                Booking Saya
+                            </a>
                             <a href="{{ route('customer.payments.index') }}"
-                               class="{{ request()->routeIs('customer.payments.*') ? 'text-slate-700 font-semibold' : 'text-slate-400 hover:text-blue-600 transition-colors' }}">
+                               class="px-2.5 py-1.5 rounded-lg transition-colors {{ request()->routeIs('customer.payments.*') ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 font-medium' }}">
                                 Pembayaran
                             </a>
                         @endif
@@ -95,9 +112,9 @@
 
                 {{-- Sisi Kanan: User Info & Actions --}}
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2.5 text-right">
+                    <a href="{{ route('profile.edit') }}" title="Edit Profil" class="flex items-center gap-2.5 text-right group hover:bg-slate-50 px-2 py-1 rounded-xl transition-colors">
                         <div>
-                            <span class="block text-xs font-bold text-slate-800 leading-tight">{{ Auth::user()->name }}</span>
+                            <span class="block text-xs font-bold text-slate-800 leading-tight group-hover:text-blue-600">{{ Auth::user()->name }}</span>
                             <span class="inline-block text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded {{ Auth::user()->isAdmin() ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">
                                 {{ Auth::user()->role }}
                             </span>
@@ -105,7 +122,7 @@
                         <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
-                    </div>
+                    </a>
 
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
@@ -114,6 +131,23 @@
                         </button>
                     </form>
                 </div>
+            </div>
+            {{-- Mobile Sub-Nav --}}
+            <div class="lg:hidden flex items-center gap-2 overflow-x-auto pb-3 text-xs border-t border-slate-100 pt-2">
+                <a href="{{ route('homepage') }}" class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">Beranda</a>
+                @if (Auth::user()->isAdmin())
+                    <a href="{{ route('admin.dashboard') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Dashboard</a>
+                    <a href="{{ route('admin.cars.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('admin.cars.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Mobil</a>
+                    <a href="{{ route('admin.categories.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('admin.categories.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Kategori</a>
+                    <a href="{{ route('admin.rentals.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('admin.rentals.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Booking</a>
+                    <a href="{{ route('admin.payments.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('admin.payments.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Pembayaran</a>
+                @else
+                    <a href="{{ route('customer.dashboard') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('customer.dashboard') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Dashboard</a>
+                    <a href="{{ route('customer.rentals.create') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('customer.rentals.create') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Sewa Mobil</a>
+                    <a href="{{ route('customer.rentals.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('customer.rentals.index', 'customer.rentals.show') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Booking Saya</a>
+                    <a href="{{ route('customer.payments.index') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('customer.payments.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Pembayaran</a>
+                @endif
+                <a href="{{ route('profile.edit') }}" class="shrink-0 px-2.5 py-1 rounded-lg {{ request()->routeIs('profile.*') ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-600' }}">Profil</a>
             </div>
         </div>
     </nav>

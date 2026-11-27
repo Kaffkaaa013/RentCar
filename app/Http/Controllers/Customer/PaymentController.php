@@ -5,58 +5,69 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Services\PublicStorageService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
-    public function index()
+    /**
+     * Tampilkan daftar tagihan & riwayat pembayaran milik customer.
+     */
+    public function index(Request $request): View
     {
-        $payments = Payment::with('booking.car')
-            ->whereHas('booking', function ($query) {$query->where('user_id', Auth::id());
-            })
+        $bookings = $request->user()
+            ->bookings()
+            ->with(['car', 'payment'])
+            ->where('booking_status', '!=', 'cancelled')
             ->latest()
             ->get();
 
-        return view('customer.payments.index', compact('payments'));
+        return view('customer.payments.index', compact('bookings'));
     }
 
-    public function create(Booking $booking)
+    /**
+     * Unggah atau perbarui bukti pembayaran untuk booking tertentu.
+     */
+    public function store(Request $request, Booking $booking): RedirectResponse
     {
-        if ($booking->user_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke transaksi ini.');
+        if ($booking->user_id !== $request->user()->id) {
+            abort(403);
         }
 
-        return view('customer.payments.create', compact('booking'));
-    }
-
-    public function store(Request $request, Booking$booking)
-    {
-        if ($booking->user_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke transaksi ini.');
+        if ($booking->booking_status !== 'pending') {
+            return back()->with('error', 'Pembayaran hanya dapat diunggah untuk booking berstatus pending.');
         }
 
-        // Validasi upload bukti bayar maksimal 1 GB (1.048.576 KB)
-        $request->validate([
-            'payment_method' => 'required|string|max:50',
-            'proof_image' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:1048576',
+        $validated = $request->validate([
+            'payment_method' => ['required', 'in:Transfer Bank,E-Wallet,Tunai'],
+            'proof_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'payment_method.required' => 'Metode pembayaran wajib dipilih.',
+            'proof_image.required' => 'Bukti pembayaran wajib diunggah.',
+            'proof_image.image' => 'File bukti harus berupa gambar.',
+            'proof_image.max' => 'Ukuran gambar maksimal 2MB.',
         ]);
 
-        $filePath =$request->file('proof_image')->store('payments', 'public');
+        $payment = $booking->payment;
+        if ($payment && $payment->proof_image) {
+            PublicStorageService::delete($payment->proof_image);
+        }
+
+        $proofPath = PublicStorageService::store($request->file('proof_image'), 'payments');
 
         Payment::updateOrCreate(
             ['booking_id' => $booking->id],
             [
-                'amount' => $booking->total_price ?? $booking->total_harga ?? 0,
-                'payment_method' => $request->payment_method,
-                'proof_image' => $filePath,
+                'payment_method' => $validated['payment_method'],
+                'amount' => $booking->total_price,
+                'proof_image' => $proofPath,
                 'payment_status' => 'pending',
                 'paid_at' => now(),
             ]
         );
 
-        return redirect()
-            ->route('customer.payments.index')
-            ->with('success', 'Bukti pembayaran berhasil diunggah dan menunggu konfirmasi Admin.');
+        return back()->with('success', 'Bukti pembayaran berhasil diunggah dan menunggu verifikasi admin.');
     }
 }

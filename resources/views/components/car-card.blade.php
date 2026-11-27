@@ -16,6 +16,10 @@
     $carPrice = $car->price_per_day;
     $carImgSrc = asset('storage/' . $car->image);
     $carStatus = $car->status === 'available' ? 'Tersedia' : ($car->status === 'maintenance' ? 'Perawatan' : 'Tidak Tersedia');
+    $galleryUrls = collect([$carImgSrc])
+        ->merge($car->images->map(fn ($img) => asset('storage/' . $img->image_path)))
+        ->unique()
+        ->values();
 @endphp
 
 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group h-full relative">
@@ -69,7 +73,8 @@
         <div class="mt-5 pt-1 grid grid-cols-2 gap-2">
             <button
                 type="button"
-                onclick="showCarDetailModal('{{ addslashes($carName) }}', '{{ addslashes($car->brand) }}', 'Rp {{ number_format($carPrice, 0, ',', '.') }} / hari', '{{ $carSeats }} Kursi', '{{ $carTrans }}', '{{ addslashes($carCategory) }}', '{{ $carImgSrc }}', '{{ $car->year }}', '{{ $car->plate_number }}', '{{ $car->id }}', '{{ $car->status }}')"
+                data-gallery='@json($galleryUrls)'
+                onclick="showCarDetailModal('{{ addslashes($carName) }}', '{{ addslashes($car->brand) }}', 'Rp {{ number_format($carPrice, 0, ',', '.') }} / hari', '{{ $carSeats }} Kursi', '{{ $carTrans }}', '{{ addslashes($carCategory) }}', '{{ $carImgSrc }}', '{{ $car->year }}', '{{ $car->plate_number }}', '{{ $car->id }}', '{{ $car->status }}', this)"
                 class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
             >
                 <span>Lihat Detail</span>

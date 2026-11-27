@@ -4,39 +4,66 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
-    public function index()
+    /**
+     * Tampilkan daftar pembayaran untuk diverifikasi admin.
+     */
+    public function index(Request $request): View
     {
-        $payments = Payment::with(['booking.user', 'booking.car'])->latest()->get();
+        $status = $request->query('status');
 
-        return view('admin.payments.index', compact('payments'));
+        $payments = Payment::with(['booking.user', 'booking.car'])
+            ->when($status, fn ($q) => $q->where('payment_status', $status))
+            ->latest()
+            ->paginate(12);
+
+        return view('admin.payments.index', compact('payments', 'status'));
     }
 
-    public function update(Request $request, Payment $payment)
+    /**
+     * Verifikasi pembayaran customer dan konfirmasi booking.
+     */
+    public function verify(Payment $payment): RedirectResponse
     {
-        $request->validate([
-            'payment_status' => 'required|in:verified,rejected',
-        ]);
-
-        $payment->update([
-            'payment_status' => $request->payment_status,
-            'paid_at' => $payment->paid_at ?? now(),
-        ]);
-
-        // Sinkronkan status booking agar otomatis tampil CONFIRMED di Dashboard Admin
-        if ($payment->booking) {
-            $payment->booking->update([
-                'booking_status' => $request->payment_status === 'verified' ? 'confirmed' : 'cancelled',
-            ]);
+        if ($payment->payment_status === 'verified') {
+            return back()->with('error', 'Pembayaran ini sudah diverifikasi sebelumnya.');
         }
 
-        $message = $request->payment_status === 'verified'
-            ? 'Pembayaran diterima. Status booking berubah menjadi Confirmed.'
-            : 'Pembayaran ditolak dan booking dibatalkan.';
+        DB::transaction(function () use ($payment): void {
+            $payment->update([
+                'payment_status' => 'verified',
+                'paid_at' => $payment->paid_at ?? now(),
+            ]);
 
-        return back()->with('success', $message);
+            if ($payment->booking && $payment->booking->booking_status === 'pending') {
+                $payment->booking->update([
+                    'booking_status' => 'confirmed',
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Pembayaran diverifikasi dan status booking menjadi Confirmed.');
+    }
+
+    /**
+     * Tolak bukti pembayaran customer.
+     */
+    public function reject(Payment $payment): RedirectResponse
+    {
+        if ($payment->payment_status === 'verified') {
+            return back()->with('error', 'Pembayaran yang sudah terverifikasi tidak dapat ditolak.');
+        }
+
+        $payment->update([
+            'payment_status' => 'rejected',
+        ]);
+
+        return back()->with('success', 'Pembayaran ditandai sebagai Ditolak (Rejected). Customer dapat mengunggah ulang bukti.');
     }
 }
