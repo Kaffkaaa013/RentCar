@@ -7,11 +7,13 @@ use App\Models\Booking;
 use App\Models\Car;
 use App\Models\CarReturn;
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RentalController extends Controller
@@ -21,6 +23,8 @@ class RentalController extends Controller
      */
     public function index(Request $request): View
     {
+        Booking::expireOverdue();
+
         $status = $request->query('status');
 
         $bookings = Booking::with(['user', 'car', 'payment', 'carReturn'])
@@ -36,26 +40,35 @@ class RentalController extends Controller
      */
     public function create(Request $request): View
     {
-        $customers = User::where('role', 'customer')->orderBy('name')->get();
+        $customers = User::where('role', User::ROLE_CUSTOMER)->orderBy('name')->get();
         $cars = Car::where('status', 'available')->orderBy('brand')->orderBy('name')->get();
         $selectedCarId = $request->integer('car_id') ?: null;
 
-        return view('admin.rentals.create', compact('customers', 'cars', 'selectedCarId'));
+        $driverFeePerDay = (float) Setting::get('driver_fee_per_day');
+
+        return view('admin.rentals.create', compact('customers', 'cars', 'selectedCarId', 'driverFeePerDay'));
     }
 
     /**
-     * Simpan booking baru oleh admin.
+     * Simpan booking baru oleh admin/petugas.
      */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
+            'user_id' => ['required', Rule::exists('users', 'id')->where('role', User::ROLE_CUSTOMER)],
             'car_id' => ['required', 'exists:cars,id'],
+            'borrower_name' => ['required', 'string', 'max:100'],
+            'borrower_phone' => ['required', 'string', 'max:20'],
             'start_date' => ['required', 'date', 'after_or_equal:today'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'with_driver' => ['nullable', 'boolean'],
             'payment_method' => ['required', 'in:Transfer Bank,E-Wallet,Tunai'],
             'payment_status' => ['required', 'in:pending,verified'],
             'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'borrower_name.required' => 'Nama peminjam wajib diisi.',
+            'borrower_phone.required' => 'Nomor kontak peminjam wajib diisi.',
+            'end_date.after' => 'Waktu kembali harus setelah waktu pinjam.',
         ]);
 
         $car = Car::findOrFail($validated['car_id']);
@@ -68,26 +81,31 @@ class RentalController extends Controller
             return back()->withInput()->withErrors(['start_date' => 'Jadwal mobil bertabrakan dengan booking lain.']);
         }
 
-        $totalDays = Booking::calculateDays($validated['start_date'], $validated['end_date']);
-        $totalPrice = $totalDays * (float) $car->price_per_day;
+        $withDriver = $request->boolean('with_driver');
+        $pricing = Booking::calculatePricing($car, $validated['start_date'], $validated['end_date'], $withDriver);
         $isVerified = $validated['payment_status'] === 'verified';
 
-        $booking = DB::transaction(function () use ($validated, $car, $totalDays, $totalPrice, $isVerified): Booking {
+        $booking = DB::transaction(function () use ($validated, $car, $pricing, $withDriver, $isVerified): Booking {
             $booking = Booking::create([
                 'user_id' => $validated['user_id'],
                 'car_id' => $car->id,
+                'borrower_name' => $validated['borrower_name'],
+                'borrower_phone' => $validated['borrower_phone'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
-                'total_days' => $totalDays,
-                'total_price' => $totalPrice,
+                'total_days' => $pricing['days'],
+                'with_driver' => $withDriver,
+                'driver_fee' => $pricing['driver_fee'],
+                'total_price' => $pricing['total'],
                 'booking_status' => $isVerified ? 'confirmed' : 'pending',
+                'payment_deadline' => $isVerified ? null : now()->addMinutes((int) Setting::get('payment_deadline_minutes')),
                 'notes' => $validated['notes'] ?? null,
             ]);
 
             Payment::create([
                 'booking_id' => $booking->id,
                 'payment_method' => $validated['payment_method'],
-                'amount' => $totalPrice,
+                'amount' => $pricing['total'],
                 'payment_status' => $validated['payment_status'],
                 'paid_at' => $isVerified ? now() : null,
             ]);
@@ -95,7 +113,7 @@ class RentalController extends Controller
             return $booking;
         });
 
-        return redirect()->route('admin.rentals.show', $booking)->with('success', 'Booking berhasil dibuat oleh admin.');
+        return redirect()->route('admin.rentals.show', $booking)->with('success', 'Booking berhasil dibuat.');
     }
 
     /**
@@ -135,7 +153,7 @@ class RentalController extends Controller
     }
 
     /**
-     * Proses pengembalian mobil dan hitung denda keterlambatan (Ongoing -> Completed).
+     * Pemeriksaan pengembalian: hitung denda keterlambatan, input denda kerusakan (Ongoing -> Completed).
      */
     public function returnCar(Request $request, Booking $booking): RedirectResponse
     {
@@ -146,35 +164,32 @@ class RentalController extends Controller
         $validated = $request->validate([
             'actual_return_date' => ['required', 'date'],
             'condition_description' => ['required', 'string', 'max:1000'],
-            'late_fee_per_day' => ['nullable', 'numeric', 'min:0'],
+            'damage_fee' => ['nullable', 'numeric', 'min:0', 'max:1000000000'],
+            'late_fee_per_day' => ['nullable', 'numeric', 'min:0', 'max:1000000000'],
         ], [
-            'actual_return_date.required' => 'Tanggal pengembalian aktual wajib diisi.',
+            'actual_return_date.required' => 'Waktu pengembalian aktual wajib diisi.',
             'condition_description.required' => 'Deskripsi kondisi mobil wajib diisi.',
         ]);
 
-        $actualDate = Carbon::parse($validated['actual_return_date']);
-        $dueDate = Carbon::parse($booking->end_date)->endOfDay();
+        $actual = Carbon::parse($validated['actual_return_date']);
+        [$lateDays, $lateFee] = $this->calculateLateFee($booking, $actual, $validated['late_fee_per_day'] ?? null);
 
-        $lateDays = 0;
-        if ($actualDate->gt($dueDate)) {
-            $lateDays = (int) Carbon::parse($booking->end_date)->startOfDay()->diffInDays($actualDate->copy()->startOfDay());
-            $lateDays = max(1, $lateDays);
-        }
+        $damageFee = (float) ($validated['damage_fee'] ?? 0);
+        $totalFine = $lateFee + $damageFee;
 
-        $ratePerDay = isset($validated['late_fee_per_day']) && $validated['late_fee_per_day'] !== ''
-            ? (float) $validated['late_fee_per_day']
-            : (float) $booking->car->price_per_day;
-
-        $lateFee = $lateDays * $ratePerDay;
-
-        DB::transaction(function () use ($booking, $actualDate, $validated, $lateDays, $lateFee): void {
+        DB::transaction(function () use ($booking, $actual, $validated, $lateDays, $lateFee, $damageFee, $totalFine): void {
             CarReturn::updateOrCreate(
                 ['booking_id' => $booking->id],
                 [
-                    'actual_return_date' => $actualDate,
+                    'actual_return_date' => $actual,
                     'condition_description' => $validated['condition_description'],
                     'late_days' => $lateDays,
                     'late_fee' => $lateFee,
+                    'damage_fee' => $damageFee,
+                    'total_fine' => $totalFine,
+                    'fine_status' => $totalFine > 0 ? 'unpaid' : 'none',
+                    'fine_proof_image' => null,
+                    'fine_paid_at' => null,
                     'return_status' => 'completed',
                 ]
             );
@@ -182,7 +197,34 @@ class RentalController extends Controller
             $booking->update(['booking_status' => 'completed']);
         });
 
-        return back()->with('success', 'Pengembalian mobil selesai dicatat. Denda keterlambatan: Rp ' . number_format($lateFee, 0, ',', '.'));
+        return back()->with('success', 'Pengembalian selesai dicatat. Total denda: Rp ' . number_format($totalFine, 0, ',', '.'));
+    }
+
+    /**
+     * Hitung denda keterlambatan berdasarkan pengaturan sistem (per jam / per hari).
+     * Jika petugas mengisi tarif per hari manual, tarif itu dipakai menggantikan pengaturan.
+     *
+     * @return array{0:int, 1:float} [late_days, late_fee]
+     */
+    private function calculateLateFee(Booking $booking, Carbon $actual, mixed $manualPerDay): array
+    {
+        if (! $actual->gt($booking->end_date)) {
+            return [0, 0.0];
+        }
+
+        $lateMinutes = abs($booking->end_date->diffInMinutes($actual));
+        $lateDays = max(1, (int) ceil($lateMinutes / 1440));
+        $lateHours = max(1, (int) ceil($lateMinutes / 60));
+
+        if ($manualPerDay !== null && $manualPerDay !== '') {
+            return [$lateDays, $lateDays * (float) $manualPerDay];
+        }
+
+        if (Setting::get('late_fee_mode') === 'day') {
+            return [$lateDays, $lateDays * (float) Setting::get('late_fee_per_day')];
+        }
+
+        return [$lateDays, $lateHours * (float) Setting::get('late_fee_per_hour')];
     }
 
     /**

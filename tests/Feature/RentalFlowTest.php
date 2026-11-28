@@ -49,6 +49,9 @@ class RentalFlowTest extends TestCase
         // Booking pertama sukses
         $response = $this->actingAs($customer1)->post(route('customer.rentals.store'), [
             'car_id' => $car->id,
+            'borrower_name' => 'Peminjam Satu',
+            'borrower_phone' => '081234567890',
+            'service_type' => 'self_drive',
             'start_date' => $start,
             'end_date' => $end,
             'payment_method' => 'Transfer Bank',
@@ -64,6 +67,9 @@ class RentalFlowTest extends TestCase
         // Booking kedua di tanggal bertabrakan harus ditolak
         $conflictResponse = $this->actingAs($customer2)->post(route('customer.rentals.store'), [
             'car_id' => $car->id,
+            'borrower_name' => 'Peminjam Dua',
+            'borrower_phone' => '081234567891',
+            'service_type' => 'self_drive',
             'start_date' => now()->addDays(2)->format('Y-m-d'),
             'end_date' => now()->addDays(4)->format('Y-m-d'),
             'payment_method' => 'Tunai',
@@ -82,8 +88,8 @@ class RentalFlowTest extends TestCase
         $booking = Booking::create([
             'user_id' => $customer->id,
             'car_id' => $car->id,
-            'start_date' => now()->subDays(3)->format('Y-m-d'),
-            'end_date' => now()->subDays(1)->format('Y-m-d'),
+            'start_date' => now()->subDays(3)->format('Y-m-d H:i:s'),
+            'end_date' => now()->subHours(5)->format('Y-m-d H:i:s'),
             'total_days' => 2,
             'total_price' => 700000,
             'booking_status' => 'pending',
@@ -116,6 +122,8 @@ class RentalFlowTest extends TestCase
         $this->assertEquals('completed', $booking->booking_status);
         $this->assertEquals(1, $booking->carReturn->late_days);
         $this->assertEquals(100000, (float) $booking->carReturn->late_fee);
+        $this->assertEquals(100000, (float) $booking->carReturn->total_fine);
+        $this->assertEquals('unpaid', $booking->carReturn->fine_status);
     }
 
     public function test_admin_can_crud_category_and_car(): void

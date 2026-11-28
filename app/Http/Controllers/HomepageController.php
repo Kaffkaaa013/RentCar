@@ -19,6 +19,8 @@ class HomepageController extends Controller
 
         // Ambil daftar mobil yang berstatus available dari database beserta relasi kategori dan galeri foto
         $cars = Car::with(['category', 'images'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->where('status', 'available')
             ->orderBy('id', 'asc')
             ->get();

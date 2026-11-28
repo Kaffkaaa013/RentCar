@@ -6,7 +6,7 @@
 @section('content')
     <div class="mb-6">
         <h1 class="text-2xl font-black text-slate-900 tracking-tight">Formulir Pemesanan Mobil</h1>
-        <p class="mt-1 text-sm text-slate-500">Pilih unit mobil dan tentukan tanggal sewa Anda. Sistem akan otomatis mengecek ketersediaan jadwal.</p>
+        <p class="mt-1 text-sm text-slate-500">Pilih unit mobil, tentukan tanggal & jam sewa, lalu pilih layanan. Sistem otomatis mengecek ketersediaan jadwal.</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -41,24 +41,62 @@
                     </select>
                 </div>
 
+                {{-- Data Peminjam --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Mulai *</label>
-                        <input type="date" name="start_date" id="start_date" min="{{ date('Y-m-d') }}" value="{{ old('start_date', date('Y-m-d')) }}" required onchange="updateEstimate()"
+                        <label for="borrower_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Peminjam *</label>
+                        <input type="text" name="borrower_name" id="borrower_name" maxlength="100" required value="{{ old('borrower_name', auth()->user()->name) }}"
                             class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20">
                     </div>
-
                     <div>
-                        <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Selesai *</label>
-                        <input type="date" name="end_date" id="end_date" min="{{ date('Y-m-d') }}" value="{{ old('end_date', date('Y-m-d', strtotime('+1 day'))) }}" required onchange="updateEstimate()"
+                        <label for="borrower_phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nomor Kontak Peminjam *</label>
+                        <input type="tel" name="borrower_phone" id="borrower_phone" maxlength="20" required value="{{ old('borrower_phone', auth()->user()->phone) }}" placeholder="08xxxxxxxxxx"
                             class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20">
                     </div>
                 </div>
 
+                {{-- Tanggal & Jam --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal & Jam Pinjam *</label>
+                        <input type="datetime-local" name="start_date" id="start_date" min="{{ now()->format('Y-m-d\TH:i') }}"
+                            value="{{ old('start_date', now()->addHour()->minute(0)->format('Y-m-d\TH:i')) }}" required onchange="updateEstimate()"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal & Jam Kembali *</label>
+                        <input type="datetime-local" name="end_date" id="end_date" min="{{ now()->format('Y-m-d\TH:i') }}"
+                            value="{{ old('end_date', now()->addDay()->addHour()->minute(0)->format('Y-m-d\TH:i')) }}" required onchange="updateEstimate()"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20">
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 -mt-3">Durasi dihitung per 24 jam dan dibulatkan ke atas (minimal 1 hari).</p>
+
                 {{-- Info Jadwal Terpesan untuk Mobil Terpilih --}}
                 <div id="bookedDatesBox" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-                    <strong class="font-bold block mb-1">Tanggal sudah terpesan untuk mobil ini:</strong>
+                    <strong class="font-bold block mb-1">Waktu sudah terpesan untuk mobil ini:</strong>
                     <ul id="bookedDatesList" class="list-disc list-inside space-y-0.5"></ul>
+                </div>
+
+                {{-- Layanan Sewa --}}
+                <div>
+                    <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Layanan Sewa *</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60">
+                            <input type="radio" name="service_type" value="self_drive" class="mt-0.5" onchange="updateEstimate()" {{ old('service_type', 'self_drive') === 'self_drive' ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-bold text-slate-800">Lepas Kunci</span>
+                                <span class="block text-xs text-slate-500">Anda mengemudi sendiri. Tanpa biaya tambahan.</span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60">
+                            <input type="radio" name="service_type" value="with_driver" class="mt-0.5" onchange="updateEstimate()" {{ old('service_type') === 'with_driver' ? 'checked' : '' }}>
+                            <span>
+                                <span class="block text-sm font-bold text-slate-800">Dengan Sopir (Driver)</span>
+                                <span class="block text-xs text-slate-500">Ditemani sopir profesional. <strong class="text-blue-700">+Rp {{ number_format($driverFeePerDay, 0, ',', '.') }}/hari</strong></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -66,7 +104,7 @@
                         <label for="payment_method" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Metode Pembayaran *</label>
                         <select name="payment_method" id="payment_method" required
                             class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20">
-                            <option value="Transfer Bank" {{ old('payment_method') === 'Transfer Bank' ? 'selected' : '' }}>Transfer Bank (BCA / Mandiri)</option>
+                            <option value="Transfer Bank" {{ old('payment_method') === 'Transfer Bank' ? 'selected' : '' }}>Transfer Bank</option>
                             <option value="E-Wallet" {{ old('payment_method') === 'E-Wallet' ? 'selected' : '' }}>E-Wallet (QRIS / GoPay / OVO)</option>
                             <option value="Tunai" {{ old('payment_method') === 'Tunai' ? 'selected' : '' }}>Tunai di Lokasi</option>
                         </select>
@@ -81,7 +119,7 @@
 
                 <div>
                     <label for="notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catatan Tambahan</label>
-                    <textarea name="notes" id="notes" rows="2" placeholder="Contoh: Pengambilan jam 09.00 WIB atau butuh supir."
+                    <textarea name="notes" id="notes" rows="2" maxlength="500" placeholder="Contoh: Titik penjemputan atau permintaan khusus."
                         class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 resize-none">{{ old('notes') }}</textarea>
                 </div>
 
@@ -110,15 +148,25 @@
                     <span class="text-slate-500">Durasi Sewa</span>
                     <span id="summaryDays" class="font-semibold text-slate-700">0 hari</span>
                 </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Subtotal Mobil</span>
+                    <span id="summaryCarTotal" class="font-semibold text-slate-700">Rp 0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Biaya Sopir</span>
+                    <span id="summaryDriver" class="font-semibold text-slate-700">Rp 0</span>
+                </div>
             </div>
             <div class="pt-4 flex justify-between items-center">
                 <span class="text-xs font-bold uppercase text-slate-500">Estimasi Total</span>
                 <span id="summaryTotal" class="text-xl font-black text-[#0f2557]">Rp 0</span>
             </div>
+            <p class="mt-2 text-[11px] text-slate-400">Total final dihitung ulang oleh sistem saat pesanan dibuat.</p>
+
             <div class="mt-5 p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-slate-600 space-y-1">
                 <p class="font-bold text-blue-800">Info Rekening Transfer:</p>
-                <p>BCA: <strong>1234-5678-90</strong> a.n. RentCar Indonesia</p>
-                <p>Mandiri: <strong>0987-6543-21</strong> a.n. RentCar Indonesia</p>
+                <p class="whitespace-pre-line">{{ $bankInfo }}</p>
+                <p class="pt-1 text-slate-500">Batas pembayaran: <strong>{{ $deadlineMinutes >= 60 ? round($deadlineMinutes / 60, 1) . ' jam' : $deadlineMinutes . ' menit' }}</strong> setelah pesanan dibuat. Pesanan yang tidak dibayar akan dibatalkan otomatis.</p>
             </div>
         </div>
     </div>
@@ -127,6 +175,7 @@
 @push('scripts')
 <script>
     const bookedDates = @json($bookedDates);
+    const DRIVER_FEE_PER_DAY = {{ (float) $driverFeePerDay }};
 
     function formatRupiah(num) {
         return 'Rp ' + Number(num).toLocaleString('id-ID');
@@ -141,17 +190,24 @@
 
         const startVal = document.getElementById('start_date').value;
         const endVal = document.getElementById('end_date').value;
+        const withDriver = document.querySelector('input[name="service_type"]:checked')?.value === 'with_driver';
 
+        // Durasi per 24 jam dibulatkan ke atas, minimal 1 hari (sama dengan aturan di server)
         let days = 0;
         if (startVal && endVal) {
-            const diff = Math.round((new Date(endVal) - new Date(startVal)) / (1000 * 60 * 60 * 24));
-            days = diff >= 0 ? Math.max(1, diff) : 0;
+            const diffMs = new Date(endVal) - new Date(startVal);
+            days = diffMs > 0 ? Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
         }
+
+        const carTotal = price * days;
+        const driverTotal = withDriver ? DRIVER_FEE_PER_DAY * days : 0;
 
         document.getElementById('summaryCar').textContent = carName;
         document.getElementById('summaryPrice').textContent = formatRupiah(price);
         document.getElementById('summaryDays').textContent = days + ' hari';
-        document.getElementById('summaryTotal').textContent = formatRupiah(price * days);
+        document.getElementById('summaryCarTotal').textContent = formatRupiah(carTotal);
+        document.getElementById('summaryDriver').textContent = formatRupiah(driverTotal);
+        document.getElementById('summaryTotal').textContent = formatRupiah(carTotal + driverTotal);
 
         const box = document.getElementById('bookedDatesBox');
         const list = document.getElementById('bookedDatesList');

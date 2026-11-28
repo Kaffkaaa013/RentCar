@@ -57,6 +57,18 @@
             <span class="text-xs text-slate-400 font-medium">/ hari</span>
         </div>
 
+        {{-- Rating & Ulasan --}}
+        @php $avgRating = $car->averageRating(); @endphp
+        <a href="{{ route('cars.show', $car) }}" class="mt-2 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600">
+            @if ($avgRating)
+                <span class="text-amber-500">&#9733;</span>
+                <span class="font-bold text-slate-700">{{ number_format($avgRating, 1) }}</span>
+                <span>({{ $car->reviews_count ?? $car->reviews()->count() }} ulasan)</span>
+            @else
+                <span class="text-slate-400">Belum ada ulasan</span>
+            @endif
+        </a>
+
         {{-- Spesifikasi / Fitur (Kursi & Transmisi) --}}
         <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-medium text-slate-500">
             <div class="flex items-center gap-1.5">
@@ -81,8 +93,8 @@
             </button>
 
             @auth
-                @if (in_array(auth()->user()->role, ['customer', 'admin'], true) && $car->status === 'available')
-                    <a href="{{ route(auth()->user()->isAdmin() ? 'admin.rentals.create' : 'customer.rentals.create', ['car_id' => $car->id]) }}"
+                @if (in_array(auth()->user()->role, ['customer', 'admin', 'staff'], true) && $car->status === 'available')
+                    <a href="{{ route(auth()->user()->isStaffOrAdmin() ? 'admin.rentals.create' : 'customer.rentals.create', ['car_id' => $car->id]) }}"
                        class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2">
                         <i data-lucide="car-front" class="w-4 h-4"></i>
                         <span>Rental</span>

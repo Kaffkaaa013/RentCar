@@ -49,14 +49,30 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Mulai *</label>
-                    <input type="date" name="start_date" id="start_date" min="{{ date('Y-m-d') }}" value="{{ old('start_date', date('Y-m-d')) }}" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
+                    <label for="borrower_name" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Peminjam *</label>
+                    <input type="text" name="borrower_name" id="borrower_name" maxlength="100" required value="{{ old('borrower_name') }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
                 </div>
                 <div>
-                    <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Selesai *</label>
-                    <input type="date" name="end_date" id="end_date" min="{{ date('Y-m-d') }}" value="{{ old('end_date', date('Y-m-d', strtotime('+1 day'))) }}" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
+                    <label for="borrower_phone" class="block text-xs font-bold text-slate-700 uppercase mb-1">Kontak Peminjam *</label>
+                    <input type="text" name="borrower_phone" id="borrower_phone" maxlength="20" required value="{{ old('borrower_phone') }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
                 </div>
             </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal & Jam Pinjam *</label>
+                    <input type="datetime-local" name="start_date" id="start_date" value="{{ old('start_date', now()->addHour()->minute(0)->format('Y-m-d\TH:i')) }}" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal & Jam Kembali *</label>
+                    <input type="datetime-local" name="end_date" id="end_date" value="{{ old('end_date', now()->addDay()->addHour()->minute(0)->format('Y-m-d\TH:i')) }}" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
+                </div>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="with_driver" value="1" {{ old('with_driver') ? 'checked' : '' }}>
+                Dengan Sopir <span class="text-xs text-slate-400">(+Rp {{ number_format($driverFeePerDay, 0, ',', '.') }}/hari)</span>
+            </label>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

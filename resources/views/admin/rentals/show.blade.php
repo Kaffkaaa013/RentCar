@@ -60,17 +60,35 @@
                 <div class="grid grid-cols-3 gap-4 pt-2 text-xs">
                     <div>
                         <span class="text-slate-400 block">Mulai</span>
-                        <span class="font-bold text-slate-800">{{ $booking->start_date->format('d M Y') }}</span>
+                        <span class="font-bold text-slate-800">{{ $booking->start_date->format('d M Y, H:i') }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block">Batas Selesai</span>
-                        <span class="font-bold text-slate-800">{{ $booking->end_date->format('d M Y') }}</span>
+                        <span class="text-slate-400 block">Batas Kembali</span>
+                        <span class="font-bold text-slate-800">{{ $booking->end_date->format('d M Y, H:i') }}</span>
                     </div>
                     <div>
                         <span class="text-slate-400 block">Total ({{ $booking->total_days }} hari)</span>
                         <span class="font-black text-[#0f2557]">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</span>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-100 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Peminjam</span>
+                        <span class="font-bold text-slate-800">{{ $booking->borrower_name ?? $booking->user->name }}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Kontak Peminjam</span>
+                        <span class="font-bold text-slate-800">{{ $booking->borrower_phone ?? $booking->user->phone ?? '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Layanan</span>
+                        <span class="font-bold text-slate-800">{{ $booking->with_driver ? 'Dengan Sopir (+Rp ' . number_format($booking->driver_fee, 0, ',', '.') . ')' : 'Lepas Kunci' }}</span>
+                    </div>
+                </div>
+                @if ($booking->payment_deadline && $booking->booking_status === 'pending')
+                    <p class="text-[11px] text-amber-700">Tenggat bayar: {{ $booking->payment_deadline->format('d M Y, H:i') }}</p>
+                @endif
             </div>
 
             {{-- Form Pengembalian Mobil (Jika Ongoing) atau Ringkasan Pengembalian --}}
@@ -86,11 +104,17 @@
                                     class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
                             </div>
                             <div>
-                                <label for="late_fee_per_day" class="block text-xs font-bold text-slate-700 uppercase mb-1">Denda Telat / Hari (Rp)</label>
-                                <input type="number" name="late_fee_per_day" id="late_fee_per_day" value="{{ (int) $booking->car->price_per_day }}" min="0"
+                                <label for="late_fee_per_day" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tarif Telat / Hari (Rp) <span class="text-slate-400 normal-case font-normal">opsional</span></label>
+                                <input type="number" name="late_fee_per_day" id="late_fee_per_day" min="0" placeholder="Kosongkan = pakai pengaturan sistem"
                                     class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
-                                <span class="text-[10px] text-slate-400">Otomatis dihitung jika melewati {{ $booking->end_date->format('d M Y') }}</span>
+                                <span class="text-[10px] text-slate-400">Denda otomatis dihitung jika melewati {{ $booking->end_date->format('d M Y H:i') }}</span>
                             </div>
+                        </div>
+
+                        <div>
+                            <label for="damage_fee" class="block text-xs font-bold text-slate-700 uppercase mb-1">Denda Kerusakan (Rp)</label>
+                            <input type="number" name="damage_fee" id="damage_fee" min="0" value="0"
+                                class="w-full sm:w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm">
                         </div>
 
                         <div>
@@ -107,7 +131,7 @@
             @elseif ($booking->carReturn)
                 <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
                     <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">Catatan Pengembalian</h2>
-                    <div class="grid grid-cols-3 gap-4 text-xs mb-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs mb-3">
                         <div>
                             <span class="text-slate-400 block">Status</span>
                             <span class="font-bold uppercase">{{ $booking->carReturn->return_status }}</span>
@@ -117,11 +141,26 @@
                             <span class="font-bold">{{ $booking->carReturn->actual_return_date ? $booking->carReturn->actual_return_date->format('d M Y H:i') : '-' }}</span>
                         </div>
                         <div>
-                            <span class="text-slate-400 block">Denda ({{ $booking->carReturn->late_days }} hari)</span>
+                            <span class="text-slate-400 block">Denda Telat ({{ $booking->carReturn->late_days }} hari)</span>
                             <span class="font-bold {{ $booking->carReturn->late_fee > 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                                 Rp {{ number_format($booking->carReturn->late_fee, 0, ',', '.') }}
                             </span>
                         </div>
+                        <div>
+                            <span class="text-slate-400 block">Denda Kerusakan</span>
+                            <span class="font-bold">Rp {{ number_format($booking->carReturn->damage_fee, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Total Denda</span>
+                            <span class="font-black text-rose-600">Rp {{ number_format($booking->carReturn->total_fine, 0, ',', '.') }}</span>
+                        </div>
+                        @if ($booking->carReturn->hasFine())
+                            <div>
+                                <span class="text-slate-400 block">Status Denda</span>
+                                <span class="font-bold uppercase">{{ $booking->carReturn->fine_status }}</span>
+                                <a href="{{ route('admin.fines.index', ['status' => 'all']) }}" class="block text-blue-600 hover:underline">Kelola denda</a>
+                            </div>
+                        @endif
                     </div>
                     <p class="text-xs text-slate-600">{{ $booking->carReturn->condition_description }}</p>
                 </div>

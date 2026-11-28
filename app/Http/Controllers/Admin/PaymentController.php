@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,8 @@ class PaymentController extends Controller
      */
     public function index(Request $request): View
     {
+        Booking::expireOverdue();
+
         $status = $request->query('status');
 
         $payments = Payment::with(['booking.user', 'booking.car'])
@@ -33,6 +36,10 @@ class PaymentController extends Controller
     {
         if ($payment->payment_status === 'verified') {
             return back()->with('error', 'Pembayaran ini sudah diverifikasi sebelumnya.');
+        }
+
+        if ($payment->booking && $payment->booking->booking_status === 'cancelled') {
+            return back()->with('error', 'Booking ini sudah dibatalkan, pembayaran tidak dapat diverifikasi.');
         }
 
         DB::transaction(function () use ($payment): void {
@@ -60,9 +67,16 @@ class PaymentController extends Controller
             return back()->with('error', 'Pembayaran yang sudah terverifikasi tidak dapat ditolak.');
         }
 
-        $payment->update([
-            'payment_status' => 'rejected',
-        ]);
+        DB::transaction(function () use ($payment): void {
+            $payment->update(['payment_status' => 'rejected']);
+
+            // Beri waktu baru agar customer sempat mengunggah ulang bukti yang benar.
+            if ($payment->booking && $payment->booking->booking_status === 'pending') {
+                $payment->booking->update([
+                    'payment_deadline' => now()->addMinutes((int) \App\Models\Setting::get('payment_deadline_minutes')),
+                ]);
+            }
+        });
 
         return back()->with('success', 'Pembayaran ditandai sebagai Ditolak (Rejected). Customer dapat mengunggah ulang bukti.');
     }

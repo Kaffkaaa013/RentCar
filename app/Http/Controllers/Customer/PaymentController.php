@@ -17,6 +17,8 @@ class PaymentController extends Controller
      */
     public function index(Request $request): View
     {
+        Booking::expireOverdue();
+
         $bookings = $request->user()
             ->bookings()
             ->with(['car', 'payment'])
@@ -34,6 +36,13 @@ class PaymentController extends Controller
     {
         if ($booking->user_id !== $request->user()->id) {
             abort(403);
+        }
+
+        Booking::expireOverdue();
+        $booking->refresh();
+
+        if ($booking->booking_status === 'cancelled') {
+            return back()->with('error', 'Booking dibatalkan karena melewati tenggat pembayaran atau telah dibatalkan.');
         }
 
         if ($booking->booking_status !== 'pending') {

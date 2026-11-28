@@ -18,8 +18,7 @@
                     <i data-lucide="landmark" class="w-4 h-4"></i>
                     <span>Rekening Tujuan Transfer Manual</span>
                 </div>
-                <p>Bank BCA: <strong class="text-slate-900">1234567890</strong> a.n. <strong class="text-slate-900">RentCar Indonesia</strong></p>
-                <p>Bank BRI: <strong class="text-slate-900">0987654321001</strong> a.n. <strong class="text-slate-900">RentCar Indonesia</strong></p>
+                <p class="whitespace-pre-line text-slate-900 font-semibold">{{ \App\Models\Setting::get('bank_info') }}</p>
                 <div class="pt-2 mt-2 border-t border-blue-200 flex justify-between items-center">
                     <span class="font-medium text-slate-600">Total Tagihan:</span>
                     <span class="text-lg font-extrabold text-blue-700">Rp {{ number_format($booking->total_price ?? 0, 0, ',', '.') }}</span>
@@ -55,7 +54,7 @@
                         <span>Scan QRIS RentCar Indonesia</span>
                     </div>
                     <div class="flex justify-center">
-                        <img src="{{ asset('images/qris.png') }}"
+                        <img src="{{ \App\Models\Setting::qrisUrl() }}"
                              alt="QRIS Pembayaran RentCar"
                              class="w-60 max-w-full rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
                     </div>
